@@ -433,5 +433,6 @@ if args.cmd == 'fit':
 		max_iter=max_iter,
 		validation_iter=parameters['validation_iter'], 
 		batch_size=parameters['batch_size'],
-		dtype=dtype
+		dtype=dtype,
+		device=device
 	)
