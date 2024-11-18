@@ -386,7 +386,7 @@ if args.cmd == 'fit':
 				bias_model = BPNet.from_chrombpnet(bias_path).to(device)
 			except:
 				try: 
-					bias_model = torch.load(bias_path).to(device)
+					bias_model = torch.load(bias_path, map_location=torch.device(device))
 				except:
 					raise ValueError("Bias model cannot be loaded.")
 
