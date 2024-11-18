@@ -398,7 +398,7 @@ if args.cmd == 'fit':
 		n_nodes=parameters['controller_n_nodes'], 
 		n_layers=parameters['controller_n_layers'], 
 		n_outputs=parameters['controller_n_outputs']
-	).to(device).cuda()
+	).to(device)
 
 	accessibility_model = DynamicBPNet(n_filters=parameters['n_filters'], 
 		n_layers=parameters['n_layers'], trimming=trimming, 
