@@ -239,12 +239,12 @@ class DragoNNFruit(torch.nn.Module):
 		return torch.stack(y_hat)
 
 
-	def _train_step(self, X, cell_states, read_depths, y, optimizer, dtype):
+	def _train_step(self, X, cell_states, read_depths, y, optimizer, dtype, device):
 		"""An internal function for a single training step."""
 
 		optimizer.zero_grad()
 
-		with torch.autocast(device_type='cuda', dtype=dtype):
+		with torch.autocast(device_type=device, dtype=dtype):
 			y_hat = self(X, cell_states, read_depths)
 
 		y_hat_ = torch.nn.functional.log_softmax(y_hat.flatten(), dim=-1)
@@ -259,7 +259,7 @@ class DragoNNFruit(torch.nn.Module):
 
 	def fit(self, training_data, validation_data, optimizer, scheduler=None,
 		n_valid=5000, max_iter=1000000, batch_size=64, validation_iter=100, 
-		dtype=torch.bfloat16):
+		dtype=torch.bfloat16, device='cuda'):
 		"""Fit an entire DragoNNFruit model to the data.
 
 		This method handles the fitting of a DragoNNFruit model to data and the
@@ -341,10 +341,10 @@ class DragoNNFruit(torch.nn.Module):
 
 		X_valid, y_valid, c_valid, r_valid = zip(*[validation_data[i]
 			for i in range(n_valid)])
-		X_valid = torch.stack(X_valid).cuda().type(torch.float32)
-		y_valid = torch.stack(y_valid).cuda().type(torch.float32)
-		c_valid = torch.stack(c_valid).cuda()
-		r_valid = torch.stack(r_valid).cuda()
+		X_valid = torch.stack(X_valid).to(device).type(torch.float32)
+		y_valid = torch.stack(y_valid).to(device).type(torch.float32)
+		c_valid = torch.stack(c_valid).to(device)
+		r_valid = torch.stack(r_valid).to(device)
 
 		start, best_corr = time.time(), 0
 		self.logger.start()
@@ -353,13 +353,13 @@ class DragoNNFruit(torch.nn.Module):
 			if i == max_iter:
 				break
 
-			X = X.cuda().type(torch.float32)
-			y = y.cuda()
-			cell_states = cell_states.cuda()
-			read_depths = read_depths.cuda()
+			X = X.to(device).type(torch.float32)
+			y = y.to(device)
+			cell_states = cell_states.to(device)
+			read_depths = read_depths.to(device)
 
 			train_loss = self._train_step(X, cell_states, read_depths, y,
-				optimizer, dtype)
+				optimizer, dtype, device)
 
 			if i % validation_iter == 0:
 				scheduler.step()
@@ -369,7 +369,7 @@ class DragoNNFruit(torch.nn.Module):
 
 				# Make predictions on the validation set
 				y_hat = predict(self, X_valid, args=(c_valid, r_valid), 
-					batch_size=batch_size).cuda()
+					batch_size=batch_size).to(device)
 				
 				# Calculate MNLL loss
 				y_hat_ = torch.nn.functional.log_softmax(y_hat.flatten(), 
